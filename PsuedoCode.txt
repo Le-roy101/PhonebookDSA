@@ -1,0 +1,150 @@
+START
+
+// Class: Contact
+CLASS Contact
+    VARIABLES:
+        String name
+        String phoneNumber
+        String email
+
+    CONSTRUCTOR Contact(name, phoneNumber, email)
+        SET this.name = name
+        SET this.phoneNumber = phoneNumber
+        SET this.email = email
+
+    METHOD getName() RETURNS name
+    METHOD setName(name)
+    METHOD getPhoneNumber() RETURNS phoneNumber
+    METHOD setPhoneNumber(phoneNumber)
+    METHOD getEmail() RETURNS email
+    METHOD setEmail(email)
+
+END CLASS
+
+
+// Class: PhoneBook
+CLASS PhoneBook
+    VARIABLE contacts = LIST OF Contact
+
+    METHOD insertContact(contact)
+        ADD contact TO contacts
+
+    METHOD searchContact(name) RETURNS Contact
+        FOR EACH contact IN contacts
+            IF contact.getName() EQUALS name (case insensitive)
+                RETURN contact
+        END FOR
+        RETURN NULL  // Not found
+
+    METHOD saveContactsToFile(fileName)
+        TRY
+            OPEN file fileName FOR WRITING
+            FOR EACH contact IN contacts
+                WRITE contact.getName() + "," + contact.getPhoneNumber() + "," + contact.getEmail() TO file
+            END FOR
+            CLOSE file
+        CATCH IOException e
+            PRINT "Error saving contacts: " + e.message
+
+    METHOD loadContactsFromFile(fileName)
+        TRY
+            OPEN file fileName FOR READING
+            WHILE NOT end of file
+                READ line FROM file
+                SPLIT line BY ","
+                IF details.length EQUALS 3
+                    ADD new Contact(details[0], details[1], details[2]) TO contacts
+                END IF
+            END WHILE
+            CLOSE file
+        CATCH IOException e
+            PRINT "Error loading contacts: " + e.message
+
+    METHOD getAllContacts() RETURNS contacts
+
+END CLASS
+
+
+// Class: LoginDialog
+CLASS LoginDialog
+    CONSTANT USERNAME = "admin"
+    CONSTANT PASSWORD = "password"
+
+    METHOD showLoginDialog(parentFrame) RETURNS boolean
+        CREATE panel
+        ADD username field (JTextField)
+        ADD password field (JPasswordField)
+        
+        DISPLAY dialog with panel
+        IF user clicks OK
+            GET userInput FROM username field
+            GET passInput FROM password field
+            
+            IF userInput EQUALS USERNAME AND passInput EQUALS PASSWORD
+                RETURN true  // Login successful
+            ELSE
+                DISPLAY "Invalid username or password."
+                RETURN false  // Login failed
+        END IF
+        RETURN false  // User canceled login
+
+END CLASS
+
+
+// Class: PhoneBookGUI
+CLASS PhoneBookGUI
+    VARIABLE phoneBook
+
+    CONSTRUCTOR PhoneBookGUI(phoneBook)
+        SET this.phoneBook = phoneBook
+        CREATE JFrame for GUI
+
+        // Create input fields for contact
+        CREATE nameField, phoneField, emailField
+        ADD components to input panel
+
+        // Create buttons
+        CREATE addButton, searchButton, displayButton
+        ADD action listeners to buttons:
+            IF addButton is clicked
+                VALIDATE input fields
+                IF valid
+                    INSERT contact to phoneBook
+                    SHOW success message
+                ELSE
+                    SHOW error message
+
+            IF searchButton is clicked
+                PROMPT user for name
+                CALL phoneBook.searchContact(name)
+                IF found
+                    DISPLAY contact information
+                ELSE
+                    SHOW "Contact not found."
+
+            IF displayButton is clicked
+                GET all contacts from phoneBook
+                DISPLAY all contacts in a message dialog
+
+        SHOW the main JFrame
+
+END CLASS
+
+
+// Class: Main
+CLASS Main
+    METHOD main(args)
+        CREATE PhoneBook instance
+        CALL phoneBook.loadContactsFromFile("contacts.csv")
+        CALL LoginDialog.showLoginDialog()
+        
+        IF login is successful
+            CREATE PhoneBookGUI instance
+            ADD shutdown hook to save contacts on exit
+        ELSE
+            PRINT "Login failed. Exiting..."
+        END IF
+
+END CLASS
+
+END
